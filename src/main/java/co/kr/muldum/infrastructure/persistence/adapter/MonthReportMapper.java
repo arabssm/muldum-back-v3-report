@@ -1,0 +1,49 @@
+package co.kr.muldum.infrastructure.persistence.adapter;
+
+import co.kr.muldum.domain.model.MonthReport;
+import co.kr.muldum.infrastructure.persistence.entity.MonthReportEntity;
+import co.kr.muldum.infrastructure.persistence.entity.ReportContent; // Import ReportContent
+import org.springframework.stereotype.Component;
+
+import java.util.UUID;
+
+@Component
+public class MonthReportMapper {
+
+    public MonthReport toDomain(MonthReportEntity entity) {
+        ReportContent content = entity.getReportContent();
+        return MonthReport.builder()
+                .id(entity.getId())
+                .userId(entity.getUserId())
+                .topic(content != null ? content.getTopic() : null)
+                .goal(content != null ? content.getGoal() : null)
+                .tech(content != null ? content.getTech() : null)
+                .problem(content != null ? content.getProblem() : null)
+                .teacherFeedback(content != null ? content.getTeacherFeedback() : null)
+                .mentorFeedback(content != null ? content.getMentorFeedback() : null)
+                .status(entity.getStatus())
+                .submittedAt(entity.getSubmittedAt())
+                .score(entity.getScore())
+                .build();
+    }
+
+    public MonthReportEntity toEntity(MonthReport domain) {
+        ReportContent content = ReportContent.builder()
+                .topic(domain.getTopic())
+                .goal(domain.getGoal())
+                .tech(domain.getTech())
+                .problem(domain.getProblem())
+                .teacherFeedback(domain.getTeacherFeedback())
+                .mentorFeedback(domain.getMentorFeedback())
+                .build();
+
+        return MonthReportEntity.builder()
+                .id(domain.getId())
+                .userId(domain.getUserId())
+                .reportContent(content) // Use ReportContent
+                .status(domain.getStatus())
+                .submittedAt(domain.getSubmittedAt())
+                .score(domain.getScore())
+                .build();
+    }
+}
