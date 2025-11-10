@@ -1,12 +1,17 @@
 package co.kr.muldum.presentation.web.controller;
 
-import co.kr.muldum.application.usecase.*;
+import co.kr.muldum.application.usecase.GetStudentMonthReportUseCase;
+import co.kr.muldum.application.usecase.GetTeacherMonthReportUseCase;
+import co.kr.muldum.application.usecase.SaveMonthReportUseCase;
+import co.kr.muldum.application.usecase.ScoreMonthReportUseCase;
+import co.kr.muldum.application.usecase.SubmitMonthReportUseCase;
+import co.kr.muldum.presentation.web.dto.request.FeedbackRequest;
 import co.kr.muldum.presentation.web.dto.request.MonthReportRequest;
-import co.kr.muldum.presentation.web.dto.request.ScoreRequest;
+import co.kr.muldum.presentation.web.dto.response.MessageResponse;
 import co.kr.muldum.presentation.web.dto.response.MonthReportDetailResponse;
-import co.kr.muldum.presentation.web.dto.response.MonthReportSimpleResponse;
+import co.kr.muldum.presentation.web.dto.response.StudentMonthReportListResponse;
 import co.kr.muldum.presentation.web.dto.response.TeacherMonthReportDetailResponse;
-import co.kr.muldum.presentation.web.dto.response.TeacherMonthReportSimpleResponse;
+import co.kr.muldum.presentation.web.dto.response.TeacherMonthReportListResponse;
 import co.kr.muldum.presentation.web.mapper.MonthReportWebMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -14,8 +19,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.UUID; // Import UUID
+import java.time.LocalDate;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
@@ -29,102 +34,76 @@ public class MonthReportController {
     private final ScoreMonthReportUseCase scoreMonthReportUseCase;
     private final MonthReportWebMapper monthReportWebMapper;
 
-    // POST /month_report - Create/Update draft
     @PostMapping("/month_report")
-    public ResponseEntity<MonthReportDetailResponse> saveMonthReport(
-            @AuthenticationPrincipal UUID userId, // Use UUID directly
+    public ResponseEntity<MessageResponse> saveMonthReport(
+            @AuthenticationPrincipal UUID userId,
             @RequestBody MonthReportRequest request) {
         var command = monthReportWebMapper.toCommand(request, userId);
-        var savedReport = saveMonthReportUseCase.save(command);
-        return new ResponseEntity<>(monthReportWebMapper.toDetailResponse(savedReport), HttpStatus.CREATED);
+        saveMonthReportUseCase.save(command);
+        return new ResponseEntity<>(new MessageResponse("수정 사항이 임시 저장되었습니다."), HttpStatus.CREATED);
     }
 
-    // POST /month_report/submit - Submit report
     @PostMapping("/month_report/submit")
-    public ResponseEntity<String> submitMonthReport(
-            @AuthenticationPrincipal UUID userId, // Use UUID directly
-            @RequestBody MonthReportRequest request, // Reusing MonthReportRequest for submission
-            @RequestParam Long reportId) { // Assuming reportId is passed as a query param for submission
-        var command = monthReportWebMapper.toCommand(request, userId, reportId);
+    public ResponseEntity<MessageResponse> submitMonthReport(
+            @AuthenticationPrincipal UUID userId,
+            @RequestBody MonthReportRequest request) {
+        var command = monthReportWebMapper.toSubmitCommand(request, userId);
         submitMonthReportUseCase.submit(command);
-        return new ResponseEntity<>("제출되었습니다.", HttpStatus.OK);
+        return new ResponseEntity<>(new MessageResponse("제출되었습니다."), HttpStatus.OK);
     }
 
-    // GET /std/month_report/{report_id} - Get student's specific report
     @GetMapping("/std/month_report/{reportId}")
     public ResponseEntity<MonthReportDetailResponse> getStudentMonthReportById(
-            @AuthenticationPrincipal UUID userId, // Use UUID directly
+            @AuthenticationPrincipal UUID userId,
             @PathVariable Long reportId) {
         var report = getStudentMonthReportUseCase.getByReportId(reportId, userId);
         return new ResponseEntity<>(monthReportWebMapper.toDetailResponse(report), HttpStatus.OK);
     }
 
-    // GET /std/month_report - Get student's all reports
     @GetMapping("/std/month_report")
-    public ResponseEntity<List<MonthReportSimpleResponse>> getStudentMonthReports(
-            @AuthenticationPrincipal UUID userId) { // Use UUID directly
+    public ResponseEntity<StudentMonthReportListResponse> getStudentMonthReports(
+            @AuthenticationPrincipal UUID userId) {
         var reports = getStudentMonthReportUseCase.getByUserId(userId);
-        var responses = reports.stream()
+        var reportResponses = reports.stream()
                 .map(monthReportWebMapper::toSimpleResponse)
                 .collect(Collectors.toList());
-        return new ResponseEntity<>(responses, HttpStatus.OK);
+        var response = StudentMonthReportListResponse.builder()
+                .month(LocalDate.now().getMonthValue())
+                .reports(reportResponses)
+                .build();
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    // GET /tch/month_report/{report_id} - Get teacher's specific report
     @GetMapping("/tch/month_report/{reportId}")
     public ResponseEntity<TeacherMonthReportDetailResponse> getTeacherMonthReportById(
-            @AuthenticationPrincipal UUID teacherId, // Use UUID directly for teacher
+            @AuthenticationPrincipal UUID teacherId,
             @PathVariable Long reportId) {
-        // Teacher authorization check would be here, e.g., check roles of authenticatedUser
-        var report = getTeacherMonthReportUseCase.getByReportId(reportId);
-        // Assuming a way to get teamId and name from report.getUserId()
-        // For now, dummy values
-        return new ResponseEntity<>(TeacherMonthReportDetailResponse.builder()
-                .reportId(report.getId())
-                .teamId(1L) // Dummy teamId
-                .name("Dummy User") // Dummy user name
-                .topic(report.getTopic())
-                .goal(report.getGoal())
-                .tech(report.getTech())
-                .problem(report.getProblem())
-                .teacherFeedback(report.getTeacherFeedback())
-                .mentorFeedback(report.getMentorFeedback())
-                .status(report.getStatus())
-                .build(), HttpStatus.OK);
+        var report = getTeacherMonthReportUseCase.getTeacherByReportId(reportId, teacherId);
+        return new ResponseEntity<>(monthReportWebMapper.toTeacherDetailResponse(report), HttpStatus.OK);
     }
 
-    // GET /tch/major/report?team={team_id}&month={month} - Get teacher's reports by team and month
     @GetMapping("/tch/major/report")
-    public ResponseEntity<List<TeacherMonthReportSimpleResponse>> getTeacherMonthReportsByTeamAndMonth(
-            @AuthenticationPrincipal UUID teacherId, // Use UUID directly for teacher
+    public ResponseEntity<TeacherMonthReportListResponse> getTeacherMonthReportsByTeamAndMonth(
+            @AuthenticationPrincipal UUID teacherId,
             @RequestParam(required = false) Long team,
             @RequestParam(required = false) Integer month) {
-        // Teacher authorization check would be here
-        // For now, team and month are not fully implemented in persistence, so returning empty list
-        List<TeacherMonthReportSimpleResponse> responses = List.of(); // Placeholder
-        // In a real scenario:
-        // var reports = getTeacherMonthReportUseCase.getByTeamAndMonth(team, month);
-        // var responses = reports.stream()
-        //         .map(report -> TeacherMonthReportSimpleResponse.builder()
-        //                 .reportId(report.getId())
-        //                 .teamId(team) // Need to get actual teamId
-        //                 .name("User Name") // Need to get actual user name
-        //                 .topic(report.getTopic())
-        //                 .status(report.getStatus())
-        //                 .submitedAt(report.getSubmittedAt())
-        //                 .build())
-        //         .collect(Collectors.toList());
-        return new ResponseEntity<>(responses, HttpStatus.OK);
+        var reports = getTeacherMonthReportUseCase.getByTeamAndMonth(team, month, teacherId);
+        var reportResponses = reports.stream()
+                .map(monthReportWebMapper::toTeacherSimpleResponse)
+                .collect(Collectors.toList());
+        var response = TeacherMonthReportListResponse.builder()
+                .month(month != null ? month : LocalDate.now().getMonthValue())
+                .reports(reportResponses)
+                .build();
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    // POST /tch/major/report/{report_id} - Score a report
     @PostMapping("/tch/major/report/{reportId}")
-    public ResponseEntity<String> scoreMonthReport(
-            @AuthenticationPrincipal UUID teacherId, // Use UUID directly for teacher
+    public ResponseEntity<MessageResponse> scoreMonthReport(
+            @AuthenticationPrincipal UUID teacherId,
             @PathVariable Long reportId,
-            @RequestBody ScoreRequest request) {
-        // Teacher authorization check would be here
-        scoreMonthReportUseCase.score(reportId, request.getScore());
-        return new ResponseEntity<>("채점 완료", HttpStatus.OK);
+            @RequestBody FeedbackRequest request) {
+        scoreMonthReportUseCase.score(reportId, request.getFeedback(), teacherId);
+        return new ResponseEntity<>(new MessageResponse("채점 완료"), HttpStatus.OK);
     }
 }

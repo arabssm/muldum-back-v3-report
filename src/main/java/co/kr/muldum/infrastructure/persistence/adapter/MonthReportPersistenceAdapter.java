@@ -41,6 +41,12 @@ public class MonthReportPersistenceAdapter implements LoadMonthReportPort, SaveM
     }
 
     @Override
+    public Optional<MonthReport> findByUserIdAndMonth(UUID userId, int month) {
+        return monthReportJpaRepository.findByUserIdAndMonth(userId, month)
+                .map(monthReportMapper::toDomain);
+    }
+
+    @Override
     public MonthReport save(MonthReport monthReport) {
         var entity = monthReportMapper.toEntity(monthReport);
         var savedEntity = monthReportJpaRepository.save(entity);

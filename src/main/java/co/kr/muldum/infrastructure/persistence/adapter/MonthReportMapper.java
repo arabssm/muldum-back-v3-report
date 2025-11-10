@@ -24,6 +24,7 @@ public class MonthReportMapper {
                 .status(entity.getStatus())
                 .submittedAt(entity.getSubmittedAt())
                 .score(entity.getScore())
+                .createdAt(entity.getCreatedAt())
                 .build();
     }
 
@@ -44,6 +45,7 @@ public class MonthReportMapper {
                 .status(domain.getStatus())
                 .submittedAt(domain.getSubmittedAt())
                 .score(domain.getScore())
+                .createdAt(domain.getCreatedAt())
                 .build();
     }
 }

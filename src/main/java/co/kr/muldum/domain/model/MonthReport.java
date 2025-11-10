@@ -23,4 +23,5 @@ public class MonthReport {
     private final ReportStatus status;
     private final LocalDateTime submittedAt;
     private final int score;
+    private final LocalDateTime createdAt;
 }

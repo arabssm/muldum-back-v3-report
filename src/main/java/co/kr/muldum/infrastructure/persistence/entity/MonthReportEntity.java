@@ -10,6 +10,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode; // Import for JdbcTypeCode
 import org.hibernate.type.SqlTypes; // Import for SqlTypes
 
@@ -37,4 +38,7 @@ public class MonthReportEntity {
     private LocalDateTime submittedAt;
 
     private int score;
+
+    @CreationTimestamp
+    private LocalDateTime createdAt;
 }

@@ -1,9 +1,10 @@
 package co.kr.muldum.application.usecase;
 
-import co.kr.muldum.domain.model.MonthReport;
+import co.kr.muldum.application.dto.response.TeacherMonthReportApplicationResponse;
 import java.util.List;
+import java.util.UUID;
 
 public interface GetTeacherMonthReportUseCase {
-    MonthReport getByReportId(Long reportId);
-    List<MonthReport> getByTeamAndMonth(Long teamId, int month);
+    TeacherMonthReportApplicationResponse getTeacherByReportId(Long reportId, UUID teacherId);
+    List<TeacherMonthReportApplicationResponse> getByTeamAndMonth(Long teamId, int month, UUID teacherId);
 }

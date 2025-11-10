@@ -1,5 +1,6 @@
 package co.kr.muldum.application.service;
 
+import co.kr.muldum.application.dto.response.TeacherMonthReportApplicationResponse;
 import co.kr.muldum.application.port.in.SaveMonthReportCommand;
 import co.kr.muldum.application.port.in.SubmitMonthReportCommand;
 import co.kr.muldum.application.port.out.LoadMonthReportPort;
@@ -13,7 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID; // Import UUID
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -25,9 +28,24 @@ public class MonthReportService implements SaveMonthReportUseCase, SubmitMonthRe
 
     @Override
     public MonthReport save(SaveMonthReportCommand command) {
-        // Here we would need logic to check if a report for the month already exists
-        // For now, we'll just create a new one.
-        MonthReport monthReport = MonthReport.builder()
+        int currentMonth = LocalDateTime.now().getMonthValue();
+        Optional<MonthReport> existingReport = loadMonthReportPort.findByUserIdAndMonth(command.getUserId(), currentMonth);
+
+        MonthReport monthReport = existingReport.map(report -> MonthReport.builder()
+                .id(report.getId())
+                .userId(report.getUserId())
+                .topic(command.getTopic())
+                .goal(command.getGoal())
+                .tech(command.getTech())
+                .problem(command.getProblem())
+                .teacherFeedback(command.getTeacherFeedback())
+                .mentorFeedback(command.getMentorFeedback())
+                .status(report.getStatus())
+                .submittedAt(report.getSubmittedAt())
+                .score(report.getScore())
+                .createdAt(report.getCreatedAt())
+                .build()
+        ).orElseGet(() -> MonthReport.builder()
                 .userId(command.getUserId())
                 .topic(command.getTopic())
                 .goal(command.getGoal())
@@ -36,20 +54,19 @@ public class MonthReportService implements SaveMonthReportUseCase, SubmitMonthRe
                 .teacherFeedback(command.getTeacherFeedback())
                 .mentorFeedback(command.getMentorFeedback())
                 .status(ReportStatus.DRAFT)
-                .build();
+                .build());
+
         return saveMonthReportPort.save(monthReport);
     }
 
     @Override
     public void submit(SubmitMonthReportCommand command) {
-        MonthReport monthReport = loadMonthReportPort.findById(command.getReportId())
-                .orElseThrow(() -> new RuntimeException("Report not found")); // Replace with specific exception
+        int currentMonth = LocalDateTime.now().getMonthValue();
+        Optional<MonthReport> existingReport = loadMonthReportPort.findByUserIdAndMonth(command.getUserId(), currentMonth);
 
-        // Add authorization logic here to ensure command.getUserId() matches report's user.
-
-        MonthReport updatedReport = MonthReport.builder()
-                .id(monthReport.getId())
-                .userId(monthReport.getUserId())
+        MonthReport monthReport = existingReport.map(report -> MonthReport.builder()
+                .id(report.getId())
+                .userId(report.getUserId())
                 .topic(command.getTopic())
                 .goal(command.getGoal())
                 .tech(command.getTech())
@@ -58,9 +75,22 @@ public class MonthReportService implements SaveMonthReportUseCase, SubmitMonthRe
                 .mentorFeedback(command.getMentorFeedback())
                 .status(ReportStatus.SUBMIT)
                 .submittedAt(LocalDateTime.now())
-                .score(monthReport.getScore())
-                .build();
-        saveMonthReportPort.save(updatedReport);
+                .score(report.getScore())
+                .createdAt(report.getCreatedAt())
+                .build()
+        ).orElseGet(() -> MonthReport.builder()
+                .userId(command.getUserId())
+                .topic(command.getTopic())
+                .goal(command.getGoal())
+                .tech(command.getTech())
+                .problem(command.getProblem())
+                .teacherFeedback(command.getTeacherFeedback())
+                .mentorFeedback(command.getMentorFeedback())
+                .status(ReportStatus.SUBMIT)
+                .submittedAt(LocalDateTime.now())
+                .build());
+
+        saveMonthReportPort.save(monthReport);
     }
 
     @Override
@@ -80,18 +110,48 @@ public class MonthReportService implements SaveMonthReportUseCase, SubmitMonthRe
     }
 
     @Override
-    public MonthReport getByReportId(Long reportId) {
-        return loadMonthReportPort.findById(reportId)
+    public TeacherMonthReportApplicationResponse getTeacherByReportId(Long reportId, UUID teacherId) {
+        // TODO: Add authorization logic to check if the teacher is authorized to view this report.
+        MonthReport report = loadMonthReportPort.findById(reportId)
                 .orElseThrow(() -> new RuntimeException("Report not found"));
+        // In a real scenario, fetch teamId and name based on report.getUserId()
+        return TeacherMonthReportApplicationResponse.builder()
+                .reportId(report.getId())
+                .userId(report.getUserId())
+                .teamId(1L) // Dummy teamId
+                .name("Dummy User") // Dummy user name
+                .topic(report.getTopic())
+                .goal(report.getGoal())
+                .tech(report.getTech())
+                .problem(report.getProblem())
+                .teacherFeedback(report.getTeacherFeedback())
+                .mentorFeedback(report.getMentorFeedback())
+                .status(report.getStatus())
+                .submittedAt(report.getSubmittedAt())
+                .score(report.getScore())
+                .build();
     }
 
     @Override
-    public List<MonthReport> getByTeamAndMonth(Long teamId, int month) {
-        return loadMonthReportPort.findByTeamAndMonth(teamId, month);
+    public List<TeacherMonthReportApplicationResponse> getByTeamAndMonth(Long teamId, int month, UUID teacherId) {
+        // TODO: Add authorization logic here.
+        List<MonthReport> reports = loadMonthReportPort.findByTeamAndMonth(teamId, month);
+        return reports.stream()
+                .map(report -> TeacherMonthReportApplicationResponse.builder()
+                        .reportId(report.getId())
+                        .userId(report.getUserId())
+                        .teamId(teamId) // Use the provided teamId
+                        .name("Dummy User") // Dummy user name
+                        .topic(report.getTopic())
+                        .status(report.getStatus())
+                        .submittedAt(report.getSubmittedAt())
+                        .build())
+                .collect(Collectors.toList());
     }
 
     @Override
-    public void score(Long reportId, int score) {
+    public void score(Long reportId, String feedback, UUID teacherId) {
+        // TODO: Add authorization logic here.
         MonthReport monthReport = loadMonthReportPort.findById(reportId)
                 .orElseThrow(() -> new RuntimeException("Report not found"));
 
@@ -102,11 +162,12 @@ public class MonthReportService implements SaveMonthReportUseCase, SubmitMonthRe
                 .goal(monthReport.getGoal())
                 .tech(monthReport.getTech())
                 .problem(monthReport.getProblem())
-                .teacherFeedback(monthReport.getTeacherFeedback())
+                .teacherFeedback(feedback) // Update teacherFeedback with the provided feedback
                 .mentorFeedback(monthReport.getMentorFeedback())
-                .status(monthReport.getStatus())
+                .status(ReportStatus.DRAFT)
                 .submittedAt(monthReport.getSubmittedAt())
-                .score(score)
+                .score(monthReport.getScore()) // Keep the existing score, or remove if not applicable
+                .createdAt(monthReport.getCreatedAt())
                 .build();
         saveMonthReportPort.save(scoredReport);
     }

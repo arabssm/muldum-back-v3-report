@@ -3,6 +3,6 @@ package co.kr.muldum.presentation.web.dto.request;
 import lombok.Getter;
 
 @Getter
-public class ScoreRequest {
-    private int score;
+public class FeedbackRequest {
+    private String feedback;
 }
