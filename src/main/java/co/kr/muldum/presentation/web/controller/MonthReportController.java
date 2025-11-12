@@ -16,7 +16,6 @@ import co.kr.muldum.presentation.web.mapper.MonthReportWebMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -36,8 +35,10 @@ public class MonthReportController {
 
     @PostMapping("/month_report")
     public ResponseEntity<MessageResponse> saveMonthReport(
-            @AuthenticationPrincipal UUID userId,
-            @RequestBody MonthReportRequest request) {
+            @RequestHeader(value = "X-User-Id") UUID userId,
+            @RequestHeader(value = "X-User-Role", defaultValue = "student") String userRole,
+            @RequestBody MonthReportRequest request
+    ) {
         var command = monthReportWebMapper.toCommand(request, userId);
         saveMonthReportUseCase.save(command);
         return new ResponseEntity<>(new MessageResponse("수정 사항이 임시 저장되었습니다."), HttpStatus.CREATED);
@@ -45,7 +46,8 @@ public class MonthReportController {
 
     @PostMapping("/month_report/submit")
     public ResponseEntity<MessageResponse> submitMonthReport(
-            @AuthenticationPrincipal UUID userId,
+            @RequestHeader(value = "X-User-Id") UUID userId,
+            @RequestHeader(value = "X-User-Role", defaultValue = "student") String userRole,
             @RequestBody MonthReportRequest request) {
         var command = monthReportWebMapper.toSubmitCommand(request, userId);
         submitMonthReportUseCase.submit(command);
@@ -54,15 +56,17 @@ public class MonthReportController {
 
     @GetMapping("/std/month_report/{reportId}")
     public ResponseEntity<MonthReportDetailResponse> getStudentMonthReportById(
-            @AuthenticationPrincipal UUID userId,
-            @PathVariable Long reportId) {
+            @RequestHeader(value = "X-User-Id") UUID userId,
+            @PathVariable Long reportId
+    ) {
         var report = getStudentMonthReportUseCase.getByReportId(reportId, userId);
         return new ResponseEntity<>(monthReportWebMapper.toDetailResponse(report), HttpStatus.OK);
     }
 
     @GetMapping("/std/month_report")
     public ResponseEntity<StudentMonthReportListResponse> getStudentMonthReports(
-            @AuthenticationPrincipal UUID userId) {
+            @RequestHeader(value = "X-User-Id") UUID userId
+    ) {
         var reports = getStudentMonthReportUseCase.getByUserId(userId);
         var reportResponses = reports.stream()
                 .map(monthReportWebMapper::toSimpleResponse)
@@ -76,23 +80,27 @@ public class MonthReportController {
 
     @GetMapping("/tch/month_report/{reportId}")
     public ResponseEntity<TeacherMonthReportDetailResponse> getTeacherMonthReportById(
-            @AuthenticationPrincipal UUID teacherId,
-            @PathVariable Long reportId) {
+            @RequestHeader(value = "X-User-Id") UUID teacherId,
+            @RequestHeader(value = "X-User-Role") String userRole,
+            @PathVariable Long reportId
+    ) {
         var report = getTeacherMonthReportUseCase.getTeacherByReportId(reportId, teacherId);
         return new ResponseEntity<>(monthReportWebMapper.toTeacherDetailResponse(report), HttpStatus.OK);
     }
 
     @GetMapping("/tch/major/report")
     public ResponseEntity<TeacherMonthReportListResponse> getTeacherMonthReportsByTeamAndMonth(
-            @AuthenticationPrincipal UUID teacherId,
+            @RequestHeader(value = "X-User-Id") UUID teacherId,
+            @RequestHeader(value = "X-User-Role") String userRole,
             @RequestParam(required = false) Long team,
-            @RequestParam(required = false) Integer month) {
+            @RequestParam(required = false) Integer month
+    ) {
         var reports = getTeacherMonthReportUseCase.getByTeamAndMonth(team, month, teacherId);
         var reportResponses = reports.stream()
                 .map(monthReportWebMapper::toTeacherSimpleResponse)
                 .collect(Collectors.toList());
         var response = TeacherMonthReportListResponse.builder()
-                .month(month != null ? month : LocalDate.now().getMonthValue())
+                .month(month)
                 .reports(reportResponses)
                 .build();
         return new ResponseEntity<>(response, HttpStatus.OK);
@@ -100,9 +108,11 @@ public class MonthReportController {
 
     @PostMapping("/tch/major/report/{reportId}")
     public ResponseEntity<MessageResponse> scoreMonthReport(
-            @AuthenticationPrincipal UUID teacherId,
+            @RequestHeader(value = "X-User-Id") UUID teacherId,
+            @RequestHeader(value = "X-User-Role") String userRole,
             @PathVariable Long reportId,
-            @RequestBody FeedbackRequest request) {
+            @RequestBody FeedbackRequest request
+    ) {
         scoreMonthReportUseCase.score(reportId, request.getFeedback(), teacherId);
         return new ResponseEntity<>(new MessageResponse("채점 완료"), HttpStatus.OK);
     }
