@@ -30,6 +30,8 @@ public class StudentMonthReportController {
     @PostMapping("/draft")
     public ResponseEntity<SaveMonthReportResponse> saveDraft(
             @RequestHeader(value = "X-User-Id") Long userId,
+            @RequestHeader(value = "X-Team-Id") Long teamId,
+            @RequestHeader(value = "X-User-Role") String userRole,
             @RequestBody MonthReportRequest request
     ) {
         var savedReport = saveMonthReportUseCase.save(monthReportWebMapper.toCommand(request, userId));
@@ -40,6 +42,8 @@ public class StudentMonthReportController {
     @PostMapping("/{reportId}")
     public ResponseEntity<SaveMonthReportResponse> updateDraft(
             @RequestHeader(value = "X-User-Id") Long userId,
+            @RequestHeader(value = "X-Team-Id") Long teamId,
+            @RequestHeader(value = "X-User-Role") String userRole,
             @PathVariable Long reportId,
             @RequestBody MonthReportRequest request
     ) {
@@ -51,6 +55,8 @@ public class StudentMonthReportController {
     @PostMapping("/submit")
     public ResponseEntity<MessageResponse> submitMonthReport(
             @RequestHeader(value = "X-User-Id") Long userId,
+            @RequestHeader(value = "X-Team-Id") Long teamId,
+            @RequestHeader(value = "X-User-Role") String userRole,
             @RequestBody MonthReportRequest request
     ) {
         submitMonthReportUseCase.submit(monthReportWebMapper.toSubmitCommand(request, userId));
@@ -60,6 +66,8 @@ public class StudentMonthReportController {
     @GetMapping("/{reportId}")
     public ResponseEntity<MonthReportDetailResponse> getStudentMonthReportById(
             @RequestHeader(value = "X-User-Id") Long userId,
+            @RequestHeader(value = "X-Team-Id") Long teamId,
+            @RequestHeader(value = "X-User-Role") String userRole,
             @PathVariable Long reportId
     ) {
         var report = getStudentMonthReportUseCase.getByReportId(reportId, userId);
@@ -68,7 +76,9 @@ public class StudentMonthReportController {
 
     @GetMapping
     public ResponseEntity<StudentMonthReportListResponse> getStudentMonthReports(
-            @RequestHeader(value = "X-User-Id") Long userId
+            @RequestHeader(value = "X-User-Id") Long userId,
+            @RequestHeader(value = "X-Team-Id") Long teamId,
+            @RequestHeader(value = "X-User-Role") String userRole
     ) {
         var reports = getStudentMonthReportUseCase.getByUserId(userId);
         var reportResponses = reports.stream()
