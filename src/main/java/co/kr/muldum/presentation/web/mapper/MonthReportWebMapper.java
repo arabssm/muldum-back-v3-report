@@ -34,7 +34,8 @@ public class MonthReportWebMapper {
                 request.getTech(),
                 request.getProblem(),
                 request.getTeacherFeedback(),
-                request.getMentorFeedback()
+                request.getMentorFeedback(),
+                request.getStatus()
         );
     }
 
@@ -48,6 +49,7 @@ public class MonthReportWebMapper {
                 .teacherFeedback(report.getTeacherFeedback())
                 .mentorFeedback(report.getMentorFeedback())
                 .status(report.getStatus())
+                .feedback(report.getTeacherFeedback())
                 .build();
     }
 

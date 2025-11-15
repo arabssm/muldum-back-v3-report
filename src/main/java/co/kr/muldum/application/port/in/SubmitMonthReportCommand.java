@@ -1,5 +1,6 @@
 package co.kr.muldum.application.port.in;
 
+import co.kr.muldum.domain.model.ReportStatus;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -13,4 +14,5 @@ public class SubmitMonthReportCommand {
     private final String problem;
     private final String teacherFeedback;
     private final String mentorFeedback;
+    private final ReportStatus status;
 }

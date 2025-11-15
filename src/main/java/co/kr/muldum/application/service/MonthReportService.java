@@ -62,6 +62,7 @@ public class MonthReportService implements SaveMonthReportUseCase, SubmitMonthRe
     public void submit(SubmitMonthReportCommand command) {
         int currentMonth = LocalDateTime.now().getMonthValue();
         Optional<MonthReport> existingReport = loadMonthReportPort.findByUserIdAndMonth(command.getUserId(), currentMonth);
+        ReportStatus status = Optional.ofNullable(command.getStatus()).orElse(ReportStatus.SUBMIT);
 
         MonthReport monthReport = existingReport.map(report -> MonthReport.builder()
                 .id(report.getId())
@@ -72,7 +73,7 @@ public class MonthReportService implements SaveMonthReportUseCase, SubmitMonthRe
                 .problem(command.getProblem())
                 .teacherFeedback(command.getTeacherFeedback())
                 .mentorFeedback(command.getMentorFeedback())
-                .status(ReportStatus.SUBMIT)
+                .status(status)
                 .submittedAt(LocalDateTime.now())
                 .score(report.getScore())
                 .createdAt(report.getCreatedAt())
@@ -85,7 +86,7 @@ public class MonthReportService implements SaveMonthReportUseCase, SubmitMonthRe
                 .problem(command.getProblem())
                 .teacherFeedback(command.getTeacherFeedback())
                 .mentorFeedback(command.getMentorFeedback())
-                .status(ReportStatus.SUBMIT)
+                .status(status)
                 .submittedAt(LocalDateTime.now())
                 .build());
 
