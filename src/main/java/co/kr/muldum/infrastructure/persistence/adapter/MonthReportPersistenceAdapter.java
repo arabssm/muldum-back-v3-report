@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID; // Import UUID
 import java.util.stream.Collectors;
 
 @Component
@@ -27,7 +26,7 @@ public class MonthReportPersistenceAdapter implements LoadMonthReportPort, SaveM
     }
 
     @Override
-    public List<MonthReport> findByUserId(UUID userId) { // Changed from Long to UUID
+    public List<MonthReport> findByUserId(Long userId) {
         return monthReportJpaRepository.findByUserId(userId).stream()
                 .map(monthReportMapper::toDomain)
                 .collect(Collectors.toList());
@@ -41,7 +40,7 @@ public class MonthReportPersistenceAdapter implements LoadMonthReportPort, SaveM
     }
 
     @Override
-    public Optional<MonthReport> findByUserIdAndMonth(UUID userId, int month) {
+    public Optional<MonthReport> findByUserIdAndMonth(Long userId, int month) {
         return monthReportJpaRepository.findByUserIdAndMonth(userId, month)
                 .map(monthReportMapper::toDomain);
     }

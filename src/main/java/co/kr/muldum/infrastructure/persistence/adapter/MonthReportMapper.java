@@ -5,8 +5,6 @@ import co.kr.muldum.infrastructure.persistence.entity.MonthReportEntity;
 import co.kr.muldum.infrastructure.persistence.entity.ReportContent; // Import ReportContent
 import org.springframework.stereotype.Component;
 
-import java.util.UUID;
-
 @Component
 public class MonthReportMapper {
 

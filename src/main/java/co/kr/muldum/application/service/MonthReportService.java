@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID; // Import UUID
 import java.util.stream.Collectors;
 
 @Service
@@ -94,7 +93,7 @@ public class MonthReportService implements SaveMonthReportUseCase, SubmitMonthRe
     }
 
     @Override
-    public MonthReport getByReportId(Long reportId, UUID userId) { // Changed from Long to UUID
+    public MonthReport getByReportId(Long reportId, Long userId) {
         MonthReport report = loadMonthReportPort.findById(reportId)
                 .orElseThrow(() -> new RuntimeException("Report not found"));
         // Add authorization logic here
@@ -105,12 +104,12 @@ public class MonthReportService implements SaveMonthReportUseCase, SubmitMonthRe
     }
 
     @Override
-    public List<MonthReport> getByUserId(UUID userId) { // Changed from Long to UUID
+    public List<MonthReport> getByUserId(Long userId) {
         return loadMonthReportPort.findByUserId(userId);
     }
 
     @Override
-    public TeacherMonthReportApplicationResponse getTeacherByReportId(Long reportId, UUID teacherId) {
+    public TeacherMonthReportApplicationResponse getTeacherByReportId(Long reportId, Long teacherId) {
         // TODO: Add authorization logic to check if the teacher is authorized to view this report.
         MonthReport report = loadMonthReportPort.findById(reportId)
                 .orElseThrow(() -> new RuntimeException("Report not found"));
@@ -133,7 +132,7 @@ public class MonthReportService implements SaveMonthReportUseCase, SubmitMonthRe
     }
 
     @Override
-    public List<TeacherMonthReportApplicationResponse> getByTeamAndMonth(Long teamId, int month, UUID teacherId) {
+    public List<TeacherMonthReportApplicationResponse> getByTeamAndMonth(Long teamId, int month, Long teacherId) {
         // TODO: Add authorization logic here.
         List<MonthReport> reports = loadMonthReportPort.findByTeamAndMonth(teamId, month);
         return reports.stream()
@@ -150,7 +149,7 @@ public class MonthReportService implements SaveMonthReportUseCase, SubmitMonthRe
     }
 
     @Override
-    public void score(Long reportId, String feedback, UUID teacherId) {
+    public void score(Long reportId, String feedback, Long teacherId) {
         // TODO: Add authorization logic here.
         MonthReport monthReport = loadMonthReportPort.findById(reportId)
                 .orElseThrow(() -> new RuntimeException("Report not found"));

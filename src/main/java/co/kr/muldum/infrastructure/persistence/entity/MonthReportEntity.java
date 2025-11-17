@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode; // Import for JdbcTypeCode
@@ -26,7 +25,7 @@ public class MonthReportEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private UUID userId;
+    private Long userId;
 
     @JdbcTypeCode(SqlTypes.JSON) // Annotation to store as JSONB
     @Column(name = "report_content", columnDefinition = "jsonb") // Explicitly define column type for PostgreSQL

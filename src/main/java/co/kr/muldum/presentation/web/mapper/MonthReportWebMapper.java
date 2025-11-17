@@ -11,12 +11,10 @@ import co.kr.muldum.presentation.web.dto.response.TeacherMonthReportDetailRespon
 import co.kr.muldum.presentation.web.dto.response.TeacherMonthReportSimpleResponse;
 import org.springframework.stereotype.Component;
 
-import java.util.UUID; // Import UUID
-
 @Component
 public class MonthReportWebMapper {
 
-    public SaveMonthReportCommand toCommand(MonthReportRequest request, UUID userId) { // Changed from Long to UUID
+    public SaveMonthReportCommand toCommand(MonthReportRequest request, Long userId) {
         return new SaveMonthReportCommand(
                 userId,
                 request.getTopic(),
@@ -28,7 +26,7 @@ public class MonthReportWebMapper {
         );
     }
 
-    public SubmitMonthReportCommand toSubmitCommand(MonthReportRequest request, UUID userId) { // Changed from Long to UUID
+    public SubmitMonthReportCommand toSubmitCommand(MonthReportRequest request, Long userId) {
         return new SubmitMonthReportCommand(
                 userId,
                 request.getTopic(),
