@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SaveMonthReportCommand {
     private final Long userId;
+    private final Long teamId;
     private final String topic;
     private final String goal;
     private final String tech;

@@ -13,6 +13,7 @@ public class MonthReport {
 
     private final Long id;
     private final Long userId;
+    private final Long teamId;
     private final String topic;
     private final String goal;
     private final String tech;

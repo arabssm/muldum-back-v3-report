@@ -13,6 +13,7 @@ public class MonthReportMapper {
         return MonthReport.builder()
                 .id(entity.getId())
                 .userId(entity.getUserId())
+                .teamId(entity.getTeamId())
                 .topic(content != null ? content.getTopic() : null)
                 .goal(content != null ? content.getGoal() : null)
                 .tech(content != null ? content.getTech() : null)
@@ -39,6 +40,7 @@ public class MonthReportMapper {
         return MonthReportEntity.builder()
                 .id(domain.getId())
                 .userId(domain.getUserId())
+                .teamId(domain.getTeamId())
                 .reportContent(content) // Use ReportContent
                 .status(domain.getStatus())
                 .submittedAt(domain.getSubmittedAt())

@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SubmitMonthReportCommand {
     private final Long userId;
+    private final Long teamId;
+    private final Long reportId;
     private final String topic;
     private final String goal;
     private final String tech;

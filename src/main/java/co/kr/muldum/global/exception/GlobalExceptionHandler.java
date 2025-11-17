@@ -16,4 +16,25 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.FORBIDDEN)
                 .body(new MessageResponse(ex.getMessage()));
     }
+
+    @ExceptionHandler(UnauthorizedTeamAccessException.class)
+    public ResponseEntity<MessageResponse> handleUnauthorizedTeamAccess(UnauthorizedTeamAccessException ex) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(new MessageResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(UnauthorizedReportAccessException.class)
+    public ResponseEntity<MessageResponse> handleUnauthorizedReportAccess(UnauthorizedReportAccessException ex) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(new MessageResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(MonthReportNotFoundException.class)
+    public ResponseEntity<MessageResponse> handleMonthReportNotFound(MonthReportNotFoundException ex) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new MessageResponse(ex.getMessage()));
+    }
 }

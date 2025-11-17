@@ -14,9 +14,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class MonthReportWebMapper {
 
-    public SaveMonthReportCommand toCommand(MonthReportRequest request, Long userId) {
+    public SaveMonthReportCommand toCommand(MonthReportRequest request, Long userId, Long teamId) {
         return new SaveMonthReportCommand(
                 userId,
+                teamId,
                 request.getTopic(),
                 request.getGoal(),
                 request.getTech(),
@@ -26,9 +27,11 @@ public class MonthReportWebMapper {
         );
     }
 
-    public SubmitMonthReportCommand toSubmitCommand(MonthReportRequest request, Long userId) {
+    public SubmitMonthReportCommand toSubmitCommand(MonthReportRequest request, Long userId, Long teamId, Long reportId) {
         return new SubmitMonthReportCommand(
                 userId,
+                teamId,
+                reportId,
                 request.getTopic(),
                 request.getGoal(),
                 request.getTech(),

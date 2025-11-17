@@ -27,9 +27,11 @@ public class MonthReportEntity {
 
     private Long userId;
 
-    @JdbcTypeCode(SqlTypes.JSON) // Annotation to store as JSONB
-    @Column(name = "report_content", columnDefinition = "jsonb") // Explicitly define column type for PostgreSQL
-    private ReportContent reportContent; // Consolidated fields
+    private Long teamId;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "report_content", columnDefinition = "jsonb")
+    private ReportContent reportContent;
 
     @Enumerated(EnumType.STRING)
     private ReportStatus status;

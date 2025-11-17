@@ -8,6 +8,9 @@ import co.kr.muldum.application.port.out.SaveMonthReportPort;
 import co.kr.muldum.application.usecase.*;
 import co.kr.muldum.domain.model.MonthReport;
 import co.kr.muldum.domain.model.ReportStatus;
+import co.kr.muldum.global.exception.MonthReportNotFoundException;
+import co.kr.muldum.global.exception.UnauthorizedReportAccessException;
+import co.kr.muldum.global.exception.UnauthorizedTeamAccessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +36,7 @@ public class MonthReportService implements SaveMonthReportUseCase, SubmitMonthRe
         MonthReport monthReport = existingReport.map(report -> MonthReport.builder()
                 .id(report.getId())
                 .userId(report.getUserId())
+                .teamId(resolveTeamId(report.getTeamId(), command.getTeamId(), command.getUserId()))
                 .topic(command.getTopic())
                 .goal(command.getGoal())
                 .tech(command.getTech())
@@ -46,6 +50,7 @@ public class MonthReportService implements SaveMonthReportUseCase, SubmitMonthRe
                 .build()
         ).orElseGet(() -> MonthReport.builder()
                 .userId(command.getUserId())
+                .teamId(command.getTeamId())
                 .topic(command.getTopic())
                 .goal(command.getGoal())
                 .tech(command.getTech())
@@ -60,13 +65,22 @@ public class MonthReportService implements SaveMonthReportUseCase, SubmitMonthRe
 
     @Override
     public void submit(SubmitMonthReportCommand command) {
-        int currentMonth = LocalDateTime.now().getMonthValue();
-        Optional<MonthReport> existingReport = loadMonthReportPort.findByUserIdAndMonth(command.getUserId(), currentMonth);
+        MonthReport existingReport = loadMonthReportPort.findById(
+                        Optional.ofNullable(command.getReportId())
+                                .orElseThrow(() -> new MonthReportNotFoundException(null)))
+                .orElseThrow(() -> new MonthReportNotFoundException(command.getReportId()));
+
+        if (!existingReport.getUserId().equals(command.getUserId())) {
+            throw new UnauthorizedReportAccessException(command.getUserId(), existingReport.getId());
+        }
+        ensureSameTeam(existingReport.getTeamId(), command.getTeamId(), command.getUserId());
+
         ReportStatus status = Optional.ofNullable(command.getStatus()).orElse(ReportStatus.SUBMIT);
 
-        MonthReport monthReport = existingReport.map(report -> MonthReport.builder()
-                .id(report.getId())
-                .userId(report.getUserId())
+        MonthReport monthReport = MonthReport.builder()
+                .id(existingReport.getId())
+                .userId(existingReport.getUserId())
+                .teamId(existingReport.getTeamId())
                 .topic(command.getTopic())
                 .goal(command.getGoal())
                 .tech(command.getTech())
@@ -75,50 +89,39 @@ public class MonthReportService implements SaveMonthReportUseCase, SubmitMonthRe
                 .mentorFeedback(command.getMentorFeedback())
                 .status(status)
                 .submittedAt(LocalDateTime.now())
-                .score(report.getScore())
-                .createdAt(report.getCreatedAt())
-                .build()
-        ).orElseGet(() -> MonthReport.builder()
-                .userId(command.getUserId())
-                .topic(command.getTopic())
-                .goal(command.getGoal())
-                .tech(command.getTech())
-                .problem(command.getProblem())
-                .teacherFeedback(command.getTeacherFeedback())
-                .mentorFeedback(command.getMentorFeedback())
-                .status(status)
-                .submittedAt(LocalDateTime.now())
-                .build());
+                .score(existingReport.getScore())
+                .createdAt(existingReport.getCreatedAt())
+                .build();
 
         saveMonthReportPort.save(monthReport);
     }
 
     @Override
-    public MonthReport getByReportId(Long reportId, Long userId) {
+    public MonthReport getByReportId(Long reportId, Long userId, Long teamId) {
         MonthReport report = loadMonthReportPort.findById(reportId)
-                .orElseThrow(() -> new RuntimeException("Report not found"));
-        // Add authorization logic here
+                .orElseThrow(() -> new MonthReportNotFoundException(reportId));
         if (!report.getUserId().equals(userId)) {
-            throw new RuntimeException("Unauthorized");
+            throw new UnauthorizedReportAccessException(userId, reportId);
         }
+        ensureSameTeam(report.getTeamId(), teamId, userId);
         return report;
     }
 
     @Override
-    public List<MonthReport> getByUserId(Long userId) {
-        return loadMonthReportPort.findByUserId(userId);
+    public List<MonthReport> getByUserId(Long userId, Long teamId) {
+        return loadMonthReportPort.findByUserId(userId).stream()
+                .filter(report -> teamId.equals(report.getTeamId()))
+                .collect(Collectors.toList());
     }
 
     @Override
     public TeacherMonthReportApplicationResponse getTeacherByReportId(Long reportId, Long teacherId) {
-        // TODO: Add authorization logic to check if the teacher is authorized to view this report.
         MonthReport report = loadMonthReportPort.findById(reportId)
-                .orElseThrow(() -> new RuntimeException("Report not found"));
-        // In a real scenario, fetch teamId and name based on report.getUserId()
+                .orElseThrow(() -> new MonthReportNotFoundException(reportId));
         return TeacherMonthReportApplicationResponse.builder()
                 .reportId(report.getId())
                 .userId(report.getUserId())
-                .teamId(1L) // Dummy teamId
+                .teamId(report.getTeamId())
                 .name("Dummy User") // Dummy user name
                 .topic(report.getTopic())
                 .goal(report.getGoal())
@@ -134,13 +137,12 @@ public class MonthReportService implements SaveMonthReportUseCase, SubmitMonthRe
 
     @Override
     public List<TeacherMonthReportApplicationResponse> getByTeamAndMonth(Long teamId, int month, Long teacherId) {
-        // TODO: Add authorization logic here.
         List<MonthReport> reports = loadMonthReportPort.findByTeamAndMonth(teamId, month);
         return reports.stream()
                 .map(report -> TeacherMonthReportApplicationResponse.builder()
                         .reportId(report.getId())
                         .userId(report.getUserId())
-                        .teamId(teamId) // Use the provided teamId
+                        .teamId(report.getTeamId())
                         .name("Dummy User") // Dummy user name
                         .topic(report.getTopic())
                         .status(report.getStatus())
@@ -151,13 +153,13 @@ public class MonthReportService implements SaveMonthReportUseCase, SubmitMonthRe
 
     @Override
     public void score(Long reportId, String feedback, Long teacherId) {
-        // TODO: Add authorization logic here.
         MonthReport monthReport = loadMonthReportPort.findById(reportId)
-                .orElseThrow(() -> new RuntimeException("Report not found"));
+                .orElseThrow(() -> new MonthReportNotFoundException(reportId));
 
         MonthReport scoredReport = MonthReport.builder()
                 .id(monthReport.getId())
                 .userId(monthReport.getUserId())
+                .teamId(monthReport.getTeamId())
                 .topic(monthReport.getTopic())
                 .goal(monthReport.getGoal())
                 .tech(monthReport.getTech())
@@ -170,5 +172,22 @@ public class MonthReportService implements SaveMonthReportUseCase, SubmitMonthRe
                 .createdAt(monthReport.getCreatedAt())
                 .build();
         saveMonthReportPort.save(scoredReport);
+    }
+
+    private Long resolveTeamId(Long existingTeamId, Long providedTeamId, Long userId) {
+        if (existingTeamId == null) {
+            if (providedTeamId == null) {
+                throw new UnauthorizedTeamAccessException(userId, null);
+            }
+            return providedTeamId;
+        }
+        ensureSameTeam(existingTeamId, providedTeamId, userId);
+        return existingTeamId;
+    }
+
+    private void ensureSameTeam(Long existingTeamId, Long providedTeamId, Long userId) {
+        if (providedTeamId == null || !existingTeamId.equals(providedTeamId)) {
+            throw new UnauthorizedTeamAccessException(userId, providedTeamId);
+        }
     }
 }
