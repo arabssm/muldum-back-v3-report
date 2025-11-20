@@ -25,11 +25,11 @@ public class TeacherMonthReportController {
     private final ScoreMonthReportUseCase scoreMonthReportUseCase;
     private final MonthReportWebMapper monthReportWebMapper;
 
-    @GetMapping("/{reportId}")
+    @GetMapping("/{report_id}")
     public ResponseEntity<TeacherMonthReportDetailResponse> getTeacherMonthReportById(
             @RequestHeader(value = "X-User-Id") Long teacherId,
             @RequestHeader(value = "X-User-Role") String userRole,
-            @PathVariable Long reportId
+            @PathVariable("report_id") Long reportId
     ) {
         validateTeacherRole(userRole);
         var report = getTeacherMonthReportUseCase.getTeacherByReportId(reportId, teacherId);
@@ -57,11 +57,11 @@ public class TeacherMonthReportController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    @PostMapping("/{reportId}")
+    @PostMapping("/{report_id}")
     public ResponseEntity<MessageResponse> scoreMonthReport(
             @RequestHeader(value = "X-User-Id") Long teacherId,
             @RequestHeader(value = "X-User-Role") String userRole,
-            @PathVariable Long reportId,
+            @PathVariable("report_id") Long reportId,
             @RequestBody FeedbackRequest request
     ) {
         validateTeacherRole(userRole);
